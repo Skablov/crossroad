@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Game</title>
+	<style>
+		canvas
+		{
+			display: block;
+			outline: 1px solid black;
+			margin: 0 auto;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="canvas" width="600" height="400"></canvas>
+		<script type="text/javascript">
+			var crash = []; // счетчик аварий
+			var counter = 0; // счетчик для светофора
+			var light_down;
+			var statusPeople = CreateNullmas(10);
+			var posPeople = Create2DArray(10);
+			var propertyPeople = Create2DArray(10);
+			var canvas = document.getElementById("canvas");
+			var ctx = canvas.getContext("2d");
+			var speedPeople = 1;
+			var img = new Image();
+			statusAuto = CreateNullmas(10); // Машина на карте или нет  0 - нет 1 - да
+			maxAuto = 0; // кол-во машин на карте
+			img.src = 'img.jpg';
+			var speed = []; // максимальная скорость
+			var brake = []; // тормоза
+			var propertyAuto = Create2DArray(10);
+			speedUp = []; // Ускорение
+			var posAuto = Create2DArray(10); // координаты машин
+			img.onload = function () // ждем загрузки изображения
+			{
+				ctx.drawImage(img, 0, 0, 600, 400);
+				setInterval(draw,1000/120);	
+
+			};
+				function draw()
+			{
+				traffic_light();
+				check_auto();
+				check_people();
+			}
+			function check_auto()
+			{
+				for(var i = 0; i < 20; i++)
+				{
+					switch(statusAuto[i])
+					{
+						case 0:
+							drawAuto(i);
+							break;
+						case 1:
+							moveAuto(i);
+							break;
+					}
+				}
+			}
+			function check_people()
+			{
+				for(var i = 0; i < 20; i++)
+				{
+					switch(statusPeople[i])
+					{
+						case 0:
+							drawPeople(i);
+							break;
+						case 1:
+							movePeople(i);
+							break;
+					}
+				}
+			}
+	function movePeople(id)
+	{
+		var tmp = 0;
+		switch(propertyPeople[id][1])
+		{
+			case 0:
+				if(posPeople[id][0] < 160 && posPeople[id][1] == 280) // идем вправо
+				{
+					for(var i = 0; i < 20; i++)
+					{
+						if(statusPeople[i] == 1)
+						{
+							if(posPeople[id][0] + speedPeople < posPeople[i][0] + 50 && posPeople[id][0] + speedPeople > posPeople[i][0] - 50 && posPeople[i][1] == 280) // проверка на то, что мы ни в кого не упираемся
+							{
+								tmp ++;
+							}
+						}
+					}
+					if(tmp == 1)
+					{
+						ctx.clearRect(posPeople[id][0] - 5 - 1, posPeople[id][1] - 5 - 1, 5 * 2 + 2, 5 * 2 + 2);
+						posPeople[id][0] += speedPeople;
+						ctx.beginPath();
+						ctx.arc(posPeople[id][0], posPeople[id][1], 5, 0, Math.PI*2, false);
+						ctx.fillStyle = 'red';
+						ctx.fill();
+						ctx.closePath();
+
+					}
+					tmp = 0;
+				}
+				if(posPeople[id][0] >= 160 && posPeople[id][1] <= 280 && posPeople[id][1] >= 110) // поднимаемся
+				{
+					for(var i = 0; i < 20; i++)
+					{
+						if(statusPeople[i] == 1)
+						{
+							if(posPeople[id][1] - speedPeople < posPeople[i][1] + 50 && posPeople[id][1] - speedPeople > posPeople[i][1] - 50 && posPeople[i][1] != 280 && posPeople[i][1] > 120)
+							{
+								tmp++;
+							}
+						}						
+					}
+
+					if(tmp <= 1 )
+					{
+						if(posPeople[id][1] == 280 && light_down == 0)
+						{
+							ctx.clearRect(posPeople[id][0] - 5 - 1, posPeople[id][1] - 5 - 1, 5 * 2 + 2, 5 * 2 + 2);
+							posPeople[id][1] -= speedPeople;
+							ctx.beginPath();
+							ctx.arc(posPeople[id][0], posPeople[id][1], 5, 0, Math.PI*2, false);
+							ctx.fillStyle = 'red';
+							ctx.fill();
+							ctx.closePath();
+						}
+						else
+						{
+							if(posPeople[id][1] != 280)
+							{
+								ctx.clearRect(posPeople[id][0] - 5 - 1, posPeople[id][1] - 5 - 1, 5 * 2 + 2, 5 * 2 + 2);
+								posPeople[id][1] -= speedPeople;
+								ctx.beginPath();
+								ctx.arc(posPeople[id][0], posPeople[id][1], 5, 0, Math.PI*2, false);
+								ctx.fillStyle = 'red';
+								ctx.fill();
+								ctx.closePath();
+							}
+						}
+
+					}
+					tmp = 0;
+				}
+
+				if(posPeople[id][1] < 120)
+				{
+					for(var i = 0; i < 20; i++)
+					{
+						if(statusPeople[i] == 1)
+						{
+							if(posPeople[id][0] - speedPeople > posPeople[i][0] - 50 && posPeople[id][0] - speedPeople < posPeople[i][0] + 50 && posPeople[i][1] < 120 && statusPeople[i] != 0)
+							{
+								tmp++;
+							}
+						}
+					}
+					if(posPeople[id][0] - speedPeople < 0)
+					{
+						statusPeople[id] = 0; // удаляем его с карты
+						ctx.clearRect(posPeople[id][0] - 5 - 1, posPeople[id][1] - 5 - 1, 5 * 2 + 2, 5 * 2 + 2);
+						drawPeople(id);
+
+					}
+					if(tmp <= 1)
+					{
+						ctx.clearRect(posPeople[id][0] - 5 - 1, posPeople[id][1] - 5 - 1, 5 * 2 + 2, 5 * 2 + 2);
+						posPeople[id][0] -= speedPeople;
+						ctx.beginPath();
+						ctx.arc(posPeople[id][0], posPeople[id][1], 5, 0, Math.PI*2, false);
+						ctx.fillStyle = 'red';
+						ctx.fill();
+						ctx.closePath();
+
+					}
+				}
+				tmp = 0;
+				break;
+
+		}
+	}
+			function drawPeople(id)
+			{
+				var tmp = 0;
+				for(var i = 0; i < 20; i++)
+				{
+					if(statusPeople[i] == 1)
+					{
+						if(posPeople[i][0] < 50 && posPeople[i][1] == 280)
+						{
+							tmp++;
+						}
+					}
+				}
+				if(tmp == 0)
+				{
+					posPeople[id][0] = 0;
+					posPeople[id][1] = 280;
+					statusPeople[id] = 1; // есть на карте
+					ctx.beginPath();
+					ctx.arc(posPeople[id][0], posPeople[id][1], 5, 0, Math.PI*2, false);
+					ctx.fillStyle = 'red';
+					ctx.fill();
+					ctx.closePath();
+					switch(id)
+					{
+						case 5:
+							propertyPeople[id][0] = 1; // глупый пешеход
+							propertyPeople[id][1] = 0; // сторона где он стоит
+							break;
+						default:
+							propertyPeople[id][0] = 0; // обычный пешеход
+							propertyPeople[id][1] = 0; // сторона где он стоит
+					}
+					statusPeople[id] = 1; // человек появился на карте
+					tmp = 0;
+				}
+			}
+			function traffic_light() // контроль светофора
+			{
+				counter++;
+
+				if(counter < 210)
+				{
+					ctx.beginPath();
+					ctx.moveTo(200,200);
+					ctx.lineTo(200,120);
+					ctx.lineWidth = 10;
+					ctx.strokeStyle = "green"; // светофор слева
+					ctx.stroke();
+					light_down = 2;
+				}
+				else
+				{
+					if(counter < 330)
+					{
+						ctx.beginPath();
+						ctx.moveTo(200,200);
+						ctx.lineTo(200,120);
+						ctx.lineWidth = 10;
+						ctx.strokeStyle = "yellow"; // светофор слева
+						ctx.stroke();
+						light_down = 1;
+					}
+					else
+					{
+						if(counter < 540)
+						{
+							ctx.beginPath();
+							ctx.moveTo(200,200);
+							ctx.lineTo(200,120);
+							ctx.lineWidth = 10;
+							ctx.strokeStyle = "red"; // светофор слева
+							ctx.stroke();
+							light_down = 0;
+						}
+					}
+				}
+				if(counter >= 540)
+				{
+
+						ctx.beginPath();
+						ctx.moveTo(200,200);
+						ctx.lineTo(200,120);
+						ctx.lineWidth = 10;
+						ctx.strokeStyle = "yellow"; // светофор слева
+						ctx.stroke();
+						light_down = 1;
+				}
+				if(counter >= 660)
+					counter = 0;
+			}
+
+	function drawAuto(id)
+	{
+		var tmp = 0;
+		propertyAuto[id][1] = randomInteger(0,1);
+
+
+		
+			if(propertyAuto[id][1] == 0)
+			{
+				for(var i = 0; i < 10; i++)
+				{
+					if(statusAuto[i] == 1)
+					{
+						if(posAuto[i][0] < 100 && posAuto[i][1] == 220) // сторона 0
+						{
+							tmp++;
+						}
+					}
+				}
+			if(tmp == 0)
+			{
+				posAuto[id][0] = 0;
+				posAuto[id][1] = 220;
+				ctx.fillStyle = 'blue';
+				ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+				ctx.fillStyle = "white";
+				ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+				switch(id)
+				{
+					case 5:
+					case 10:
+						propertyAuto[id][0] = 1; // гонщик
+						propertyAuto[id][2] = 2; // начальная скорость
+						speed[id] = 10;
+						speedUp[id] = 5;
+						brake[id] = 2;
+					break;
+					case 7:
+						propertyAuto[id][0] = 2; // плохие тормоза
+						propertyAuto[id][2] = 2;
+						speed[id] = 4;
+						speedUp[id] = 2;
+						brake[id] = 1;
+					break;
+					default:
+						propertyAuto[id][0] = 0; // обычный водитель
+						propertyAuto[id][2] = 2;
+						speed[id] = 20;
+						speedUp[id] = 10;
+						brake[id] = 2;
+				}
+				statusAuto[id] = 1; // машина появилась на карте
+				tmp = 0;
+			}
+		}
+			if(propertyAuto[id][1] == 1)
+			{
+				console.log("123"); 
+				var tmb = 0;
+				for(var i = 0; i < 10; i++)
+				{
+					if(statusAuto[i] == 1)
+					{
+						if(posAuto[i][0] > 450 && posAuto[i][1] == 150) // сторона 1
+						{
+							tmb++;
+						}
+					}
+				}
+				if(tmb == 0)
+				{
+				posAuto[id][0] = 600
+				posAuto[id][1] = 150;
+				ctx.fillStyle = 'blue';
+				ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+				ctx.fillStyle = "white";
+				ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+				switch(id)
+				{
+					case 5:
+					case 10:
+						propertyAuto[id][0] = 1; // гонщик
+						propertyAuto[id][2] = -2; // начальная скорость
+						speed[id] = -10;
+						speedUp[id] = -5;
+						brake[id] = 2;
+					break;
+					case 7:
+						propertyAuto[id][0] = 2; // плохие тормоза
+						propertyAuto[id][2] = -2;
+						speed[id] = -4;
+						speedUp[id] = -2;
+						brake[id] = -1;
+					break;
+					default:
+						propertyAuto[id][0] = 0; // обычный водитель
+						propertyAuto[id][2] = -2;
+						speed[id] = -4;
+						speedUp[id] = -2;
+						brake[id] = -2;
+				}
+				statusAuto[id] = 1; // машина появилась на карте
+				tmp = 0;
+				}
+			}
+		}
+	function moveAuto(id)
+	{
+		switch(propertyAuto[id][1])
+		{
+			case 0:
+				var tmp = 0;
+				for(var i = 0; i < 20; i++)
+				{
+					if(statusPeople[i] == 1)
+					{
+						if(posPeople[i][0] - 5 < posAuto[id][0] + 30 && posPeople[i][0]  > posAuto[id][0]  && posPeople[i][1] >= 200 && posPeople[i][1] <= 230 && propertyAuto[id][2] != 0)
+						{
+							tmp++;
+							console.log("auto = " + posAuto[id][0] + "man = " + posPeople[i][0]);
+							statusPeople[i] = 0;
+							statusAuto[id] = 0;
+							ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							ctx.arc(posPeople[i][0], posPeople[i][1], 5, 0, Math.PI*2, false);
+							check_auto(id);
+							check_people(i);
+							crash.push(0);
+							console.log("crash");
+						}
+					}
+					if(statusAuto[i] == 1 && i != id)
+					{
+						if(posAuto[i][0] - 5 < posAuto[id][0] + 30 && posAuto[i][0]  > posAuto[id][0] && posAuto[i][1] == posAuto[id][1])
+						{
+							tmp++;
+							console.log("auto = " + posAuto[id][0] + "auto = " + posAuto[i][0]);
+							statusAuto[i] = 0;
+							statusAuto[id] = 0;
+							ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							ctx.clearRect(posAuto[i][0], posAuto[i][1], 30, 20);
+							check_auto(id);
+							check_auto(i);
+							crash.push(0);
+							console.log("crash1");
+						}
+						if((posAuto[id][0] + propertyAuto[id][2] > posAuto[i][0] - 50) && posAuto[id][0] + 20 < posAuto[i][0] && posAuto[id][1] == posAuto[i][1])
+						{
+							while(propertyAuto[id][2] > 0)
+							{
+								propertyAuto[id][2] -= brake[id];
+								posAuto[id][0] += propertyAuto[id][2];
+								ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+								posAuto[id][0] += propertyAuto[id][2];
+								ctx.fillStyle = 'blue';
+								ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+								ctx.fillStyle = "white";
+								ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+							}
+							propertyAuto[id][2] = 0;
+							tmp++;	
+						}
+					}
+
+				}
+					if(tmp == 0 && posAuto[id][0] < 120 && light_down == 1)
+					{
+						while(propertyAuto[id][2] > 0)
+						{
+							propertyAuto[id][2] -= 1;
+							ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							posAuto[id][0] += propertyAuto[id][2];
+							ctx.fillStyle = 'blue';
+							ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							ctx.fillStyle = "white";
+							ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+						}
+						propertyAuto[id][2] = 0;
+					}
+					if(tmp == 0 && posAuto[id][0] >= 80 && posAuto[id][0] <= 180 && light_down == 2)
+					{
+						if(propertyAuto[id][2] + speedUp[id] < speed[id])
+						{
+							propertyAuto[id][2] += speedUp[id];
+						}
+						ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+						posAuto[id][0] += propertyAuto[id][2];
+						ctx.fillStyle = 'blue';
+						ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+						ctx.fillStyle = "white";
+						ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+					}
+					else
+					{
+						if(tmp == 0 && (posAuto[id][0] < 90 ||  posAuto[id][0] > 180))
+						{
+							if(propertyAuto[id][2] + speedUp[id] < speed[id])
+							{
+								propertyAuto[id][2] += speedUp[id];
+							}
+							ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							posAuto[id][0] += propertyAuto[id][2];
+							ctx.fillStyle = 'blue';
+							ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							ctx.fillStyle = "white";
+							ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+						}
+						else
+						{
+							while(propertyAuto[id][2] >= 0)
+							{
+								propertyAuto[id][2] -= brake[id];
+								if(propertyAuto[id][2] > 0)
+								{
+									ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+									posAuto[id][0] += propertyAuto[id][2];
+									ctx.fillStyle = 'blue';
+									ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+									ctx.fillStyle = "white";
+									ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10);
+								}
+							}
+							propertyAuto[id][2] = 0;
+
+						}
+					}
+	
+					if(posAuto[id][0] > 600)
+					{
+						statusAuto[id] = 0;
+					}
+					tmp = 0;
+				break;
+
+				case 1:
+					var tmp = 0;
+				for(var i = 0; i < 20; i++)
+				{
+					if(statusPeople[i] == 1)
+					{
+						if(posPeople[i][0] < posAuto[id][0] && posPeople[i][0] > posAuto[id][0] + 30 && posPeople[i][1] > posAuto[id][1] - 30 && posPeople[i][1] < posAuto[id][1] + 30)
+						{
+							tmp++;
+							console.log("auto = " + posAuto[id][0] + "man = " + posPeople[i][0]);
+							statusPeople[i] = 0;
+							statusAuto[id] = 0;
+							ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							ctx.arc(posPeople[i][0], posPeople[i][1], 5, 0, Math.PI*2, false);
+							check_auto(id);
+							check_people(i);
+							crash.push(1);
+							console.log("crash01");
+						}
+					}
+					if(statusAuto[i] == 1 && i != id)
+					{
+						if(posAuto[i][0] - 30 < posAuto[id][0] && posAuto[i][0] > posAuto[id][0] && posAuto[id][1] == posAuto[i][1])
+						{
+							tmp++;
+							console.log("auto = " + posAuto[id][0] + "auto = " + posAuto[i][0]);
+							statusAuto[i] = 0;
+							statusAuto[id] = 0;
+							ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							ctx.clearRect(posAuto[i][0], posAuto[i][1], 30, 20);
+							check_auto(id);
+							check_auto(i);
+							crash.push(1);
+							console.log("crash14");
+						}
+						if((posAuto[id][0] + propertyAuto[id][2] < posAuto[i][0] + 100) && (posAuto[id][0] > posAuto[i][0] - 50 && posAuto[id][1] == posAuto[i][1]))
+						{
+							while(propertyAuto[id][2] > 0)
+							{
+
+								propertyAuto[id][2] += brake[id];
+								posAuto[id][0] += propertyAuto[id][2];
+								ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+								posAuto[id][0] += propertyAuto[id][2];
+								ctx.fillStyle = 'blue';
+								ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+								ctx.fillStyle = "white";
+								ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+							}
+							propertyAuto[id][2] = 0;
+							tmp++;	
+						}
+					}
+				}
+					if(posAuto[id][0] < 90)
+					{
+						console.log(posAuto[id][0] + propertyAuto[id][2]);
+					}
+					if(tmp == 0 && posAuto[id][0] + propertyAuto[id][2] > 80 && posAuto[id][0] + propertyAuto[id][2] <= 180  && light_down == 2)
+					{
+
+						if(propertyAuto[id][2] + speedUp[id] > speed[id])
+						{
+							propertyAuto[id][2] += speedUp[id];
+						}
+						ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+						posAuto[id][0] += propertyAuto[id][2];
+						ctx.fillStyle = 'blue';
+						ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+						ctx.fillStyle = "white";
+						ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+					}
+					else
+					{
+						if(tmp == 0  &&  (posAuto[id][0] > 180 || posAuto[id][0] + propertyAuto[id][2] <= 80))
+						{
+							if(propertyAuto[id][2] + speedUp[id] > speed[id])
+							{
+								propertyAuto[id][2] += speedUp[id];
+							}
+							ctx.clearRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							posAuto[id][0] += propertyAuto[id][2];
+							ctx.fillStyle = 'blue';
+							ctx.fillRect(posAuto[id][0], posAuto[id][1], 30, 20);
+							ctx.fillStyle = "white";
+							ctx.fillRect(posAuto[id][0] + 10, posAuto[id][1] + 5,10,10)
+						}
+
+					}
+					if(posAuto[id][0] < -30)
+					{
+						statusAuto[id] = 0;
+					}
+					tmp = 0;
+				
+				break;
+				}	
+			}
+	
+			function CreateNullmas(rows) // заполняем массив нулями
+			{
+				let arr = [];
+				for(var i = 0; i < rows; i++)
+				{
+					arr[i] = 0;
+				}
+				return arr;
+			}
+			function Create2DArray(rows) // в js же нет двумерных массивов ((
+			    {
+		  			var arr = [];
+		  			for (var i = 0; i < rows; i++) 
+		  			{
+		     			arr[i] = [];
+		 	    	}
+
+		  			return arr;
+				}
+			
+			function randomInteger(min, max) // рандом чисел
+			{
+			    var rand = min + Math.random() * (max + 1 - min);
+			    rand = Math.floor(rand);
+			    return rand;
+			}
+
+		</script>
+	</body>
+</html>
